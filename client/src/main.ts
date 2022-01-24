@@ -1,5 +1,5 @@
 
-import { Icon } from '@iconify/vue2';
+import { Icon, addIcon } from '@iconify/vue2/dist/offline';
 import { createPinia, PiniaVuePlugin } from 'pinia';
 import { polyfill as SeamlessScrollPolyfill } from 'seamless-scroll-polyfill';
 import VTooltip from 'v-tooltip';
@@ -8,6 +8,8 @@ import VueVirtualScroller from 'vue-virtual-scroller';
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css';
 import VuetifyMessageSnackbar from 'vuetify-message-snackbar';
 import 'v-tooltip/dist/v-tooltip.css';
+import '@mdi/font/css/materialdesignicons.css';
+import 'yakuhanjp/dist/css/yakuhanjp_s.css';
 
 import App from '@/App.vue';
 import VTabItem from '@/components/Vuetify/VTabItem';
@@ -23,6 +25,136 @@ import Utils from '@/utils';
 // スムーズスクロール周りの API の polyfill を適用
 // Element.scrollInfoView() のオプション指定を使うために必要
 SeamlessScrollPolyfill();
+
+// 各アイコンのインポート
+// ソースで使っているアイコンを列挙するコマンド:
+// find -name '*.vue' -exec grep '<Icon ' {} ';' | sed 's/^.*\sicon=\(\S*\).*$/\1/' | sort | uniq
+
+import akarIconsChevronRight from '@iconify/icons-akar-icons/chevron-right';
+import biChatLeftTextFill from '@iconify/icons-bi/chat-left-text-fill';
+import charmHash from '@iconify/icons-charm/hash';
+import faSignIn from '@iconify/icons-fa/sign-in';
+import faSignOut from '@iconify/icons-fa/sign-out';
+import faBrandsTwitter from '@iconify/icons-fa-brands/twitter';
+import faSolidBroadcastTower from '@iconify/icons-fa-solid/broadcast-tower';
+import faSolidEye from '@iconify/icons-fa-solid/eye';
+import faSolidFireAlt from '@iconify/icons-fa-solid/fire-alt';
+import faSolidInfoCircle from '@iconify/icons-fa-solid/info-circle';
+import faSolidSlidersH from '@iconify/icons-fa-solid/sliders-h';
+import fa6SolidDownload from '@iconify/icons-fa6-solid/download';
+import fa6SolidUpload from '@iconify/icons-fa6-solid/upload';
+import fluentAdd12Filled from '@iconify/icons-fluent/add-12-filled';
+import fluentArrowDown12Filled from '@iconify/icons-fluent/arrow-down-12-filled';
+import fluentArrowLeft12Filled from '@iconify/icons-fluent/arrow-left-12-filled';
+import fluentArrowSync20Filled from '@iconify/icons-fluent/arrow-sync-20-filled';
+import fluentCalendarLtr20Regular from '@iconify/icons-fluent/calendar-ltr-20-regular';
+import fluentCheckmark16Filled from '@iconify/icons-fluent/checkmark-16-filled';
+import fluentCheckmarkCircle16Filled from '@iconify/icons-fluent/checkmark-circle-16-filled';
+import fluentClipboardTextLtr32Regular from '@iconify/icons-fluent/clipboard-text-ltr-32-regular';
+import fluentCommentDismiss20Filled from '@iconify/icons-fluent/comment-dismiss-20-filled';
+import fluentDelete16Filled from '@iconify/icons-fluent/delete-16-filled';
+import fluentDismiss12Filled from '@iconify/icons-fluent/dismiss-12-filled';
+import fluentDismiss16Filled from '@iconify/icons-fluent/dismiss-16-filled';
+import fluentDocumentArrowDown16Filled from '@iconify/icons-fluent/document-arrow-down-16-filled';
+import fluentDocumentArrowUp16Filled from '@iconify/icons-fluent/document-arrow-up-16-filled';
+import fluentEdit16Filled from '@iconify/icons-fluent/edit-16-filled';
+import fluentFastForward20Filled from '@iconify/icons-fluent/fast-forward-20-filled';
+import fluentHome16Regular from '@iconify/icons-fluent/home-16-regular';
+import fluentImage16Filled from '@iconify/icons-fluent/image-16-filled';
+import fluentImageCopy20Regular from '@iconify/icons-fluent/image-copy-20-regular';
+import fluentImageMultiple16Filled from '@iconify/icons-fluent/image-multiple-16-filled';
+import fluentImageMultiple24Regular from '@iconify/icons-fluent/image-multiple-24-regular';
+import fluentInfo16Regular from '@iconify/icons-fluent/info-16-regular';
+import fluentIosArrowLeft24Filled from '@iconify/icons-fluent/ios-arrow-left-24-filled';
+import fluentIosArrowRight24Filled from '@iconify/icons-fluent/ios-arrow-right-24-filled';
+import fluentKeyboard20Filled from '@iconify/icons-fluent/keyboard-20-filled';
+import fluentMoreCircle20Regular from '@iconify/icons-fluent/more-circle-20-regular';
+import fluentMoreVertical20Filled from '@iconify/icons-fluent/more-vertical-20-filled';
+import fluentMoviesAndTv20Regular from '@iconify/icons-fluent/movies-and-tv-20-regular';
+import fluentNavigation16Filled from '@iconify/icons-fluent/navigation-16-filled';
+import fluentPerson20Filled from '@iconify/icons-fluent/person-20-filled';
+import fluentPersonAdd20Filled from '@iconify/icons-fluent/person-add-20-filled';
+import fluentPersonBoard20Filled from '@iconify/icons-fluent/person-board-20-filled';
+import fluentPersonProhibited20Filled from '@iconify/icons-fluent/person-prohibited-20-filled';
+import fluentPin20Filled from '@iconify/icons-fluent/pin-20-filled';
+import fluentPlugConnected20Filled from '@iconify/icons-fluent/plug-connected-20-filled';
+import fluentPlugDisconnected20Filled from '@iconify/icons-fluent/plug-disconnected-20-filled';
+import fluentSave16Filled from '@iconify/icons-fluent/save-16-filled';
+import fluentSearch16Filled from '@iconify/icons-fluent/search-16-filled';
+import fluentServerSurface16Filled from '@iconify/icons-fluent/server-surface-16-filled';
+import fluentSettings20Regular from '@iconify/icons-fluent/settings-20-regular';
+import fluentSubtitles16Filled from '@iconify/icons-fluent/subtitles-16-filled';
+import fluentTimer16Regular from '@iconify/icons-fluent/timer-16-regular';
+import fluentTv20Regular from '@iconify/icons-fluent/tv-20-regular';
+import fluentZoomIn16Regular from '@iconify/icons-fluent/zoom-in-16-regular';
+import heroiconsSolidFilter from '@iconify/icons-heroicons-solid/filter';
+import icRoundPlaylistPlay from '@iconify/icons-ic/round-playlist-play';
+import materialSymbolsDeviceResetRounded from '@iconify/icons-material-symbols/device-reset-rounded';
+import materialSymbolsDragHandleRounded from '@iconify/icons-material-symbols/drag-handle-rounded';
+
+// 各アイコンをフレームワークに登録
+// sed -n "s/^import \\(.*\\) from '@iconify\\/icons-\\([^/]*\\)\\/\\([^/]*\\)';$/addIcon('\\2:\\3', \\1);/p" main.ts
+addIcon('akar-icons:chevron-right', akarIconsChevronRight);
+addIcon('bi:chat-left-text-fill', biChatLeftTextFill);
+addIcon('charm:hash', charmHash);
+addIcon('fa:sign-in', faSignIn);
+addIcon('fa:sign-out', faSignOut);
+addIcon('fa-brands:twitter', faBrandsTwitter);
+addIcon('fa-solid:broadcast-tower', faSolidBroadcastTower);
+addIcon('fa-solid:eye', faSolidEye);
+addIcon('fa-solid:fire-alt', faSolidFireAlt);
+addIcon('fa-solid:info-circle', faSolidInfoCircle);
+addIcon('fa-solid:sliders-h', faSolidSlidersH);
+addIcon('fa6-solid:download', fa6SolidDownload);
+addIcon('fa6-solid:upload', fa6SolidUpload);
+addIcon('fluent:add-12-filled', fluentAdd12Filled);
+addIcon('fluent:arrow-down-12-filled', fluentArrowDown12Filled);
+addIcon('fluent:arrow-left-12-filled', fluentArrowLeft12Filled);
+addIcon('fluent:arrow-sync-20-filled', fluentArrowSync20Filled);
+addIcon('fluent:calendar-ltr-20-regular', fluentCalendarLtr20Regular);
+addIcon('fluent:checkmark-16-filled', fluentCheckmark16Filled);
+addIcon('fluent:checkmark-circle-16-filled', fluentCheckmarkCircle16Filled);
+addIcon('fluent:clipboard-text-ltr-32-regular', fluentClipboardTextLtr32Regular);
+addIcon('fluent:comment-dismiss-20-filled', fluentCommentDismiss20Filled);
+addIcon('fluent:delete-16-filled', fluentDelete16Filled);
+addIcon('fluent:dismiss-12-filled', fluentDismiss12Filled);
+addIcon('fluent:dismiss-16-filled', fluentDismiss16Filled);
+addIcon('fluent:document-arrow-down-16-filled', fluentDocumentArrowDown16Filled);
+addIcon('fluent:document-arrow-up-16-filled', fluentDocumentArrowUp16Filled);
+addIcon('fluent:edit-16-filled', fluentEdit16Filled);
+addIcon('fluent:fast-forward-20-filled', fluentFastForward20Filled);
+addIcon('fluent:home-16-regular', fluentHome16Regular);
+addIcon('fluent:image-16-filled', fluentImage16Filled);
+addIcon('fluent:image-copy-20-regular', fluentImageCopy20Regular);
+addIcon('fluent:image-multiple-16-filled', fluentImageMultiple16Filled);
+addIcon('fluent:image-multiple-24-regular', fluentImageMultiple24Regular);
+addIcon('fluent:info-16-regular', fluentInfo16Regular);
+addIcon('fluent:ios-arrow-left-24-filled', fluentIosArrowLeft24Filled);
+addIcon('fluent:ios-arrow-right-24-filled', fluentIosArrowRight24Filled);
+addIcon('fluent:keyboard-20-filled', fluentKeyboard20Filled);
+addIcon('fluent:more-circle-20-regular', fluentMoreCircle20Regular);
+addIcon('fluent:more-vertical-20-filled', fluentMoreVertical20Filled);
+addIcon('fluent:movies-and-tv-20-regular', fluentMoviesAndTv20Regular);
+addIcon('fluent:navigation-16-filled', fluentNavigation16Filled);
+addIcon('fluent:person-20-filled', fluentPerson20Filled);
+addIcon('fluent:person-add-20-filled', fluentPersonAdd20Filled);
+addIcon('fluent:person-board-20-filled', fluentPersonBoard20Filled);
+addIcon('fluent:person-prohibited-20-filled', fluentPersonProhibited20Filled);
+addIcon('fluent:pin-20-filled', fluentPin20Filled);
+addIcon('fluent:plug-connected-20-filled', fluentPlugConnected20Filled);
+addIcon('fluent:plug-disconnected-20-filled', fluentPlugDisconnected20Filled);
+addIcon('fluent:save-16-filled', fluentSave16Filled);
+addIcon('fluent:search-16-filled', fluentSearch16Filled);
+addIcon('fluent:server-surface-16-filled', fluentServerSurface16Filled);
+addIcon('fluent:settings-20-regular', fluentSettings20Regular);
+addIcon('fluent:subtitles-16-filled', fluentSubtitles16Filled);
+addIcon('fluent:timer-16-regular', fluentTimer16Regular);
+addIcon('fluent:tv-20-regular', fluentTv20Regular);
+addIcon('fluent:zoom-in-16-regular', fluentZoomIn16Regular);
+addIcon('heroicons-solid:filter', heroiconsSolidFilter);
+addIcon('ic:round-playlist-play', icRoundPlaylistPlay);
+addIcon('material-symbols:device-reset-rounded', materialSymbolsDeviceResetRounded);
+addIcon('material-symbols:drag-handle-rounded', materialSymbolsDragHandleRounded);
 
 // Production Tip を非表示にする
 Vue.config.productionTip = false;
