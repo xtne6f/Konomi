@@ -23,7 +23,15 @@
         "vuetify": "^2.5.8"
     },
     "devDependencies": {
+        "@iconify/icons-akar-icons": "1.1.30",
+        "@iconify/icons-bi": "1.1.12",
+        "@iconify/icons-fa-brands": "1.1.1",
+        "@iconify/icons-fa-solid": "1.1.1",
+        "@iconify/icons-fluent": "1.1.35",
+        "@iconify/icons-heroicons-solid": "1.1.3",
+        "@iconify/icons-ic": "1.1.18",
         "@iconify/vue2": "^1.0.0",
+        "@mdi/font": "6.5.95",
         "@types/resize-observer-browser": "^0.1.6",
         "@types/wicg-mediasession": "^1.1.3",
         "@typescript-eslint/eslint-plugin": "^4.29.3",
@@ -44,7 +52,8 @@
         "typescript": "~4.1.5",
         "vue-cli-plugin-vuetify": "~2.4.2",
         "vue-template-compiler": "^2.6.14",
-        "vuetify-loader": "^1.7.3"
+        "vuetify-loader": "^1.7.3",
+        "yakuhanjp": "3.4.1"
     },
     "eslintConfig": {
         "root": true,
