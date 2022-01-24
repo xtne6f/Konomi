@@ -16,7 +16,6 @@ import VTabs from '@/components/VTabs';
 import VTabsItems from '@/components/VTabsItems';
 import vuetify from '@/plugins/vuetify';
 import router from '@/router';
-import '@/service-worker';
 
 // 各アイコンのインポート
 // ソースで使っているアイコンを列挙するコマンド:
