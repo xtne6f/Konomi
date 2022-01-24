@@ -17,7 +17,6 @@ import VTabsItems from '@/components/VTabsItems';
 import mixin from '@/mixins';
 import vuetify from '@/plugins/vuetify';
 import router from '@/router';
-import '@/service-worker';
 
 // 各アイコンのインポート
 // ソースで使っているアイコンを列挙するコマンド:
