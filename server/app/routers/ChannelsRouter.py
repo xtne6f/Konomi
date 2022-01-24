@@ -1,5 +1,6 @@
 
 import asyncio
+import json
 import pathlib
 import requests
 from datetime import timedelta
@@ -10,14 +11,16 @@ from fastapi import status
 from fastapi.responses import FileResponse
 from fastapi.responses import Response
 from tortoise import timezone
+from tortoise import Tortoise
+from typing import Optional
 
 from app import schemas
 from app.constants import CONFIG, LOGO_DIR
 from app.models import Channels
 from app.models import LiveStream
-from app.models import Programs
 from app.utils import RunAsync
 from app.utils.EDCB import EDCBUtil, CtrlCmdUtil
+from app.utils import Jikkyo
 
 
 # ルーター
@@ -45,26 +48,38 @@ async def ChannelsAPI():
     tasks = list()
 
     # チャンネル情報を取得
+    channels:Channels
     tasks.append(Channels.all().order_by('channel_number').order_by('remocon_id'))
+
+    # データベースの生のコネクションを取得
+    # 地デジ・BS・CS を合わせると 18000 件近くになる番組情報を SQLite かつ ORM で絞り込んで素早く取得するのは無理があるらしい
+    # そこで、この部分だけは ORM の機能を使わず、直接クエリを叩いて取得する
+    conn = Tortoise.get_connection('default')
 
     # 現在の番組情報を取得する
     ## 一度に取得した方がパフォーマンスが向上するため敢えてそうしている
-    ## 13時間分しか取得しないのもパフォーマンスの関係 当然 13 時間を超える番組は表示できなくなるが、
-    ## そもそも 13 時間を超える番組はデータ放送やショップチャンネル垂れ流しの CATV くらいなので実害はないと判断
-    ## 24時間分取得するときよりも 100ms ほど短縮される
-    tasks.append(Programs.all().filter(
-        start_time__lte = now,  # 番組開始時刻が現在時刻以下
-        end_time__gte = now,  # 番組終了時刻が現在時刻以上
-        end_time__lt = now + timedelta(hours=13),  # 番組終了時刻が(現在時刻 + 13時間)より前
-    ).order_by('-start_time'))
+    ## 24時間分しか取得しないのもパフォーマンスの関係で、24時間を超える番組は確認できる限り存在しないため実害はないと判断
+    programs_present:dict
+    tasks.append(conn.execute_query_dict(
+        'SELECT * FROM "programs" WHERE "start_time"<=(?) AND "end_time">=(?) AND "end_time"<(?) ORDER BY "start_time" DESC',
+        [
+            now,  # 番組開始時刻が現在時刻以下
+            now,  # 番組終了時刻が現在時刻以上
+            now + timedelta(hours=24)  # 番組終了時刻が現在時刻から先24時間以内
+        ]
+    ))
 
     # 次の番組情報を取得する
-    tasks.append(Programs.all().filter(
-        start_time__gte = now,  # 番組開始時刻が現在時刻以上
-        end_time__lt = now + timedelta(hours=13),  # 番組終了時刻が(現在時刻 + 13時間)より前
-    ).order_by('start_time'))
+    programs_following:dict
+    tasks.append(conn.execute_query_dict(
+        'SELECT * FROM "programs" WHERE "start_time">=(?) AND "end_time"<(?) ORDER BY "start_time" ASC',
+        [
+            now,  # 番組開始時刻が現在時刻以上
+            now + timedelta(hours=24) # 番組終了時刻が現在時刻から先24時間以内
+        ]
+    ))
 
-    # 並行実行
+    # 並行して実行
     channels, programs_present, programs_following = await asyncio.gather(*tasks)
 
     # レスポンスの雛形
@@ -78,13 +93,25 @@ async def ChannelsAPI():
     # チャンネルごとに実行
     for channel in channels:
 
-        # チャンネル ID で絞り込む
-        program_present = list(filter(lambda temp: temp.channel_id == channel.channel_id, programs_present))
-        program_following = list(filter(lambda temp: temp.channel_id == channel.channel_id, programs_following))
+        # 番組情報のリストからチャンネル ID が合致するものを探し、最初に見つけた値を返す
+        def FilterProgram(programs, channel_id) -> Optional[dict]:
+            for program in programs:
+                if program['channel_id'] == channel_id:
+                    return program
+            return None  # 全部回したけど見つからなかった
 
-        # 要素が 0 個以上であれば
-        channel.program_present = program_present[0] if len(program_present) > 0 else None
-        channel.program_following = program_following[0] if len(program_following) > 0 else None
+        # 現在と次の番組情報をチャンネル ID で絞り込む
+        # filter() はイテレータを返すので、list に変換する
+        channel.program_present = FilterProgram(programs_present, channel.channel_id)
+        channel.program_following = FilterProgram(programs_following, channel.channel_id)
+
+        # JSON データで格納されているカラムをデコードする
+        if channel.program_present is not None:
+            channel.program_present['detail'] = json.loads(channel.program_present['detail'])
+            channel.program_present['genre'] = json.loads(channel.program_present['genre'])
+        if channel.program_following is not None:
+            channel.program_following['detail'] = json.loads(channel.program_following['detail'])
+            channel.program_following['genre'] = json.loads(channel.program_following['genre'])
 
         # サブチャンネルでかつ現在の番組情報が両方存在しないなら、表示フラグを False に設定
         # 現在放送されているサブチャンネルのみをチャンネルリストに表示するような挙動とする
@@ -278,3 +305,33 @@ async def ChannelLogoAPI(
 
     # 同梱のロゴファイルも Mirakurun や EDCB からのロゴもない場合のみ
     return FileResponse(LOGO_DIR / 'default.png', headers=header)
+
+
+@router.get(
+    '/{channel_id}/jikkyo',
+    summary = 'ニコニコ実況セッション情報 API',
+    response_description = '',
+)
+async def ChannelJikkyoSessionAPI(
+    channel_id:str = Path(..., description='チャンネル ID 。ex:gr011'),
+):
+    """
+    チャンネルに紐づくニコニコ実況のセッション情報を取得する。
+    """
+
+    # チャンネル情報を取得
+    channel = await Channels.filter(channel_id=channel_id).get_or_none()
+
+    # 指定されたチャンネル ID が存在しない
+    if channel is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail='Specified channel_id was not found',
+        )
+
+    # ニコニコ実況クライアントを初期化する
+    jikkyo = Jikkyo(channel.network_id, channel.service_id)
+
+    # ニコ生の視聴セッション情報を取得する
+    # 今のところ値をそのまま返す
+    return await jikkyo.fetchNicoLiveSession()

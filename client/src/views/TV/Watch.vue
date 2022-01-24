@@ -1,7 +1,7 @@
 <template>
     <div class="route-container">
         <main class="watch-container"
-            :class="{'watch-container--control-visible': is_control_visible, 'watch-container--panel-visible': is_panel_visible}">
+            :class="{'watch-container--control-visible': is_control_display, 'watch-container--panel-visible': is_panel_display}">
             <nav class="watch-navigation">
                 <router-link v-ripple class="watch-navigation__icon" to="/tv/">
                     <img class="watch-navigation__icon-image" src="/assets/img/icon.svg" width="23px">
@@ -44,7 +44,7 @@
                     <span class="watch-header__now">{{time}}</span>
                 </header>
                 <div class="watch-player" :class="{'watch-player--loading': is_loading}">
-                    <div class="watch-player__background" :class="{'watch-player__background--visible': is_background_visible}"
+                    <div class="watch-player__background" :class="{'watch-player__background--visible': is_background_display}"
                         :style="{backgroundImage: `url(${background_url})`}">
                         <img class="watch-player__background-logo" src="/assets/img/logo.svg">
                     </div>
@@ -58,7 +58,7 @@
                             <Icon class="switch-button-icon" icon="fluent:ios-arrow-left-24-filled" width="32px" rotate="1" />
                         </router-link>
                         <div v-ripple class="switch-button switch-button-panel switch-button-panel--open"
-                            @click="is_panel_visible = !is_panel_visible">
+                            @click="is_panel_display = !is_panel_display">
                             <Icon class="switch-button-icon" icon="fluent:navigation-16-filled" width="32px" />
                         </div>
                         <router-link v-ripple class="switch-button switch-button-down" :to="`/tv/watch/${channel_next.channel_id}`"
@@ -73,7 +73,7 @@
                 v-on:touchmove="controlVisibleTimer('panel', $event)"
                 v-on:click="controlVisibleTimer('panel', $event)">
                 <div class="watch-panel__header">
-                    <div v-ripple class="panel-close-button" @click="is_panel_visible = false">
+                    <div v-ripple class="panel-close-button" @click="is_panel_display = false">
                         <Icon class="panel-close-button__icon" icon="akar-icons:chevron-right" width="25px" />
                         <span class="panel-close-button__text">閉じる</span>
                     </div>
@@ -85,33 +85,36 @@
                     </div>
                 </div>
                 <div class="watch-panel__content-container">
+                    <!-- props の名前に _props を付けているのは Mixin 側の data と衝突しないようにするため -->
                     <Program class="watch-panel__content"
-                        :class="{'watch-panel__content--active': tab_active === 'program'}" :channel_props="channel" />
-                    <Channels class="watch-panel__content"
-                        :class="{'watch-panel__content--active': tab_active === 'channel'}" :channels_list_props="channels_list" />
+                        :class="{'watch-panel__content--active': panel_active_tab === 'Program'}" :channel_props="channel" />
+                    <Channel class="watch-panel__content"
+                        :class="{'watch-panel__content--active': panel_active_tab === 'Channel'}" :channels_list_props="channels_list" />
+                    <Comment class="watch-panel__content"
+                        :class="{'watch-panel__content--active': panel_active_tab === 'Comment'}" :channel_props="channel" :player="player" />
                 </div>
                 <div class="watch-panel__navigation">
                     <div v-ripple class="panel-navigation-button"
-                        :class="{'panel-navigation-button--active': tab_active === 'program'}"
-                        @click="tab_active = 'program'">
+                        :class="{'panel-navigation-button--active': panel_active_tab === 'Program'}"
+                        @click="panel_active_tab = 'Program'">
                         <Icon class="panel-navigation-button__icon" icon="fa-solid:info-circle" width="33px" />
                         <span class="panel-navigation-button__text">番組情報</span>
                     </div>
                     <div v-ripple class="panel-navigation-button"
-                        :class="{'panel-navigation-button--active': tab_active === 'channel'}"
-                        @click="tab_active = 'channel'">
+                        :class="{'panel-navigation-button--active': panel_active_tab === 'Channel'}"
+                        @click="panel_active_tab = 'Channel'">
                         <Icon class="panel-navigation-button__icon" icon="fa-solid:broadcast-tower" width="34px" />
                         <span class="panel-navigation-button__text">チャンネル</span>
                     </div>
                     <div v-ripple class="panel-navigation-button"
-                        :class="{'panel-navigation-button--active': tab_active === 'comment'}"
-                        @click="tab_active = 'comment'">
+                        :class="{'panel-navigation-button--active': panel_active_tab === 'Comment'}"
+                        @click="panel_active_tab = 'Comment'">
                         <Icon class="panel-navigation-button__icon" icon="bi:chat-left-text-fill" width="29px" />
                         <span class="panel-navigation-button__text">コメント</span>
                     </div>
                     <div v-ripple class="panel-navigation-button"
-                        :class="{'panel-navigation-button--active': tab_active === 'twitter'}"
-                        @click="tab_active = 'twitter'">
+                        :class="{'panel-navigation-button--active': panel_active_tab === 'Twitter'}"
+                        @click="panel_active_tab = 'Twitter'">
                         <Icon class="panel-navigation-button__icon" icon="fa-brands:twitter" width="34px" />
                         <span class="panel-navigation-button__text">Twitter</span>
                     </div>
@@ -122,14 +125,16 @@
 </template>
 <script lang="ts">
 
-import Vue from 'vue';
+import { AxiosResponse } from 'axios';
 import dayjs from 'dayjs';
 // @ts-ignore  JavaScript で書かれているので型定義がなく、作ろうとするとややこしくなるので黙殺
 import DPlayer from 'dplayer';
 import mpegts from 'mpegts.js';
+import Vue from 'vue';
 
 import { IChannel, IChannelDefault } from '@/interface';
-import Channels from '@/components/TV/Channels.vue';
+import Channel from '@/components/TV/Channel.vue';
+import Comment from '@/components/TV/Comment.vue';
 import Program from '@/components/TV/Program.vue';
 import Mixin from '@/views/TV/Mixin.vue';
 import Utility from '@/utility';
@@ -137,20 +142,21 @@ import Utility from '@/utility';
 export default Mixin.extend({
     name: 'Watch',
     components: {
-        Channels,
+        Channel,
+        Comment,
         Program,
     },
     data() {
         return {
 
-            // アクティブなタブ
-            tab_active: 'program',
-
             // 現在時刻
             time: dayjs().format('YYYY/MM/DD HH:mm:ss'),
 
+            // 表示されるパネルのタブ
+            panel_active_tab: Utility.getSettingsItem('panel_active_tab'),
+
             // 背景の URL
-            background_url: '/assets/img/player-background1.jpg',
+            background_url: '',
 
             // プレイヤーのローディング状態
             // 既定でローディングとする
@@ -158,15 +164,25 @@ export default Mixin.extend({
 
             // プレイヤーの背景を表示するか
             // 既定で表示しない
-            is_background_visible: false,
+            is_background_display: false,
 
             // コントロールを表示するか
             // 既定で表示する
-            is_control_visible: true,
+            is_control_display: true,
 
             // パネルを表示するか
-            // 既定で表示する
-            is_panel_visible: true,
+            // panel_display_state が 'AlwaysDisplay' なら常に表示し、'AlwaysFold' なら常に折りたたむ
+            // 'RestorePreviousState' なら is_latest_panel_display の値を使い､前回の状態を復元する
+            is_panel_display: (() => {
+                switch (Utility.getSettingsItem('panel_display_state')) {
+                    case 'AlwaysDisplay':
+                        return true;
+                    case 'AlwaysFold':
+                        return false;
+                    case 'RestorePreviousState':
+                        return Utility.getSettingsItem('is_latest_panel_display');
+                }
+            })(),
 
             // インターバル ID
             // ページ遷移時に setInterval(), setTimeout() の実行を止めるのに使う
@@ -195,6 +211,12 @@ export default Mixin.extend({
 
             // イベントソースのインスタンス
             eventsource: null,
+
+            // ショートカットキーのハンドラー
+            shortcut_key_handler: null,
+
+            // ショートカットキーの最終押下時刻のタイムスタンプ
+            shortcut_key_pressed_at: Date.now(),
         }
     },
     // 開始時に実行
@@ -207,7 +229,15 @@ export default Mixin.extend({
     beforeDestroy() {
 
         // destroy() を実行
+        // 別のページへ遷移するため、DPlayer のインスタンスを確実に破棄する
+        // さもなければ、ブラウザがリロードされるまでバックグラウンドで永遠に再生されてしまう
         this.destroy(true);
+
+        // ページ上でキーが押されたときのイベントを削除
+        if (this.shortcut_key_handler !== null) {
+            document.removeEventListener('keydown', this.shortcut_key_handler);
+            this.shortcut_key_handler = null;
+        }
     },
     // チャンネル切り替え時に実行
     // コンポーネント（インスタンス）は再利用される
@@ -234,6 +264,12 @@ export default Mixin.extend({
         }, 500));
 
         next();
+    },
+    watch: {
+        // 前回視聴画面を開いた際にパネルが表示されていたかどうかを保存
+        is_panel_display() {
+            Utility.setSettingsItem('is_latest_panel_display', this.is_panel_display);
+        }
     },
     methods: {
 
@@ -282,7 +318,7 @@ export default Mixin.extend({
             }
 
             // チャンネル情報 API にアクセス
-            let channel_response;
+            let channel_response: AxiosResponse;
             try {
                 channel_response = await Vue.axios.get(`${this.api_base_url}/channels/${this.channel_id}`);
             } catch (error) {
@@ -303,7 +339,8 @@ export default Mixin.extend({
             // チャンネル情報を代入
             this.channel = channel_response.data;
 
-            // まだ初期化されていなければ
+            // プレイヤーがまだ初期化されていない or 他のチャンネルからの切り替えですでにプレイヤーが初期化されているけど破棄が可能
+            // update() 自体は初期化時以外にも1分ごとに定期実行されるため、その際に毎回プレイヤーを再初期化しないようにする
             if (this.player === null || this.player.KonomiTVCanDestroy === true) {
 
                 // プレイヤーを初期化
@@ -311,6 +348,9 @@ export default Mixin.extend({
 
                 // イベントハンドラーを初期化
                 this.initEventHandler();
+
+                // ショートカットキーを初期化
+                this.initShortcutKeyHandler();
             }
 
             // 副音声がない番組でプレイヤー上で副音声に切り替えられないように
@@ -324,7 +364,7 @@ export default Mixin.extend({
 
                 // 現在副音声が選択されている可能性を考慮し、明示的に主音声に切り替える
                 if (this.player.plugins.mpegts) {
-                    window.setTimeout(() => {  // 初期化が終わるまで少し待つ
+                    window.setTimeout(() => {  // プレイヤーの初期化が完了するまで少し待つ
                         this.player.template.audioItem[0].classList.add('dplayer-setting-audio-current');
                         this.player.template.audioItem[1].classList.remove('dplayer-setting-audio-current');
                         this.player.template.audioValue.textContent = this.player.tran('Primary audio');
@@ -345,7 +385,7 @@ export default Mixin.extend({
 
             // チャンネル情報一覧 API にアクセス
             // チャンネル情報 API と同時にアクセスするとむしろレスポンスが遅くなるので、返ってくるのを待ってから実行
-            let channels_response;
+            let channels_response: AxiosResponse;
             try {
                 channels_response = await Vue.axios.get(`${this.api_base_url}/channels`);
             } catch (error) {
@@ -407,6 +447,7 @@ export default Mixin.extend({
                         artist: this.channel_previous.channel_name,
                         artwork: artwork,
                     });
+                    // ルーティングを前のチャンネルに置き換える
                     await this.$router.replace({path: `/tv/watch/${this.channel_previous.channel_id}`});
                 });
                 navigator.mediaSession.setActionHandler('nexttrack', async () => {  // 次のチャンネルに切り替え
@@ -415,6 +456,7 @@ export default Mixin.extend({
                         artist: this.channel_next.channel_name,
                         artwork: artwork,
                     });
+                    // ルーティングを次のチャンネルに置き換える
                     await this.$router.replace({path: `/tv/watch/${this.channel_next.channel_id}`});
                 });
             }
@@ -439,7 +481,7 @@ export default Mixin.extend({
             const timeout = () => {
 
                 // コントロールを非表示にする
-                this.is_control_visible = false;
+                this.is_control_display = false;
 
                 // プレイヤーのコントロールと設定パネルを非表示にする
                 if (this.player !== null) {
@@ -455,7 +497,7 @@ export default Mixin.extend({
                 if (this.player.controller.isShow()) {
 
                     // コントロールを表示する
-                    this.is_control_visible = true;
+                    this.is_control_display = true;
 
                     // プレイヤーのコントロールを表示する
                     this.player.controller.show();
@@ -467,7 +509,7 @@ export default Mixin.extend({
                 } else {
 
                     // コントロールを非表示にする
-                    this.is_control_visible = false;
+                    this.is_control_display = false;
 
                     // プレイヤーのコントロールと設定パネルを非表示にする
                     this.player.controller.hide();
@@ -478,7 +520,7 @@ export default Mixin.extend({
             } else {
 
                 // コントロールを表示する
-                this.is_control_visible = true;
+                this.is_control_display = true;
 
                 // プレイヤーのコントロールを表示する
                 if (this.player !== null) {
@@ -494,7 +536,7 @@ export default Mixin.extend({
         // プレイヤーを初期化する
         initPlayer() {
 
-            // mpegts.js を window 空間に入れる
+            // mpegts.js を window 直下に入れる
             // こうしないと DPlayer が mpegts.js を認識できない
             (window as any).mpegts = mpegts;
 
@@ -513,85 +555,77 @@ export default Mixin.extend({
             // DPlayer を初期化
             this.player = new DPlayer({
                 container: document.querySelector('.watch-player__dplayer'),
-                volume: 1.0,
-                autoplay: true,
-                screenshot: true,
-                airplay: false,
-                live: true,
-                loop: true,
-                lang: 'ja-jp',
-                theme: '#E64F97',
-                // 読み込む URL を指定する
+                theme: '#E64F97',  // テーマカラー
+                lang: 'ja-jp',  // 言語
+                live: true,  // ライブモード
+                loop: false,  // ループ再生 (ライブのため無効化)
+                airplay: false,  // AirPlay 機能 (うまく動かないため無効化)
+                autoplay: true,  // 自動再生
+                hotkey: false,  // ショートカットキー（こちらで制御するため無効化）
+                screenshot: true,  // スクリーンショット
+                volume: 1.0,  // 音量の初期値
+                // 映像
                 video: {
-                    defaultQuality: '1080p',  // 当面 1080p で決め打ち
-                    quality: [
-                        {
-                            name: '1080p',
-                            type: 'mpegts',
-                            url: `${this.api_base_url}/streams/live/${this.channel_id}/1080p/mpegts`,
-                        },
-                        {
-                            name: '720p',
-                            type: 'mpegts',
-                            url: `${this.api_base_url}/streams/live/${this.channel_id}/720p/mpegts`,
-                        },
-                        {
-                            name: '540p',
-                            type: 'mpegts',
-                            url: `${this.api_base_url}/streams/live/${this.channel_id}/540p/mpegts`,
-                        },
-                        {
-                            name: '480p',
-                            type: 'mpegts',
-                            url: `${this.api_base_url}/streams/live/${this.channel_id}/480p/mpegts`,
-                        },
-                        {
-                            name: '360p',
-                            type: 'mpegts',
-                            url: `${this.api_base_url}/streams/live/${this.channel_id}/360p/mpegts`,
-                        },
-                        {
-                            name: '240p',
-                            type: 'mpegts',
-                            url: `${this.api_base_url}/streams/live/${this.channel_id}/240p/mpegts`,
-                        },
-                    ],
+                    // デフォルトの画質
+                    defaultQuality: Utility.getSettingsItem('tv_streaming_quality'),
+                    // 画質リスト
+                    quality: (() => {
+                        const qualities = [];
+                        for (const quality of ['1080p', '810p', '720p', '540p', '480p', '360p', '240p']) {
+                            qualities.push({
+                                name: quality,
+                                type: 'mpegts',
+                                url: `${this.api_base_url}/streams/live/${this.channel_id}/${quality}/mpegts`,
+                            });
+                        }
+                        return qualities;
+                    })(),
                 },
-                // コメント設定
-                // danmaku: {
-                //     id: 'KonomiTV',
-                //     user: 'KonomiTV',
-                //     api: '',
-                //     bottom: '10%',
-                //     height: 35,
-                //     unlimited: false,
-                // },
+                // コメント
+                danmaku: {
+                    height: 38,  // コメントのフォントサイズ
+                },
+                // コメント API バックエンド
+                apiBackend: {
+                    // コメント受信時
+                    read: (options) => {
+                        // 成功したことにして通知を抑制
+                        options.success([{}]);
+                    },
+                    // コメント送信時
+                    send: (options) => {
+                        // TODO: コメント送信は未実装
+                        options.error('現在、コメントの送信には対応していません。');
+                    },
+                },
+                // プラグイン
                 pluginOptions: {
                     // mpegts.js
                     mpegts: {
                         config: {
-                            enableWorker: true,
-                            liveBufferLatencyChasing: true,
-                            liveBufferLatencyMaxLatency: 3.0,
-                            liveBufferLatencyMinRemain: 0.5,
+                            enableWorker: true,  // Web Worker を有効にする
+                            liveBufferLatencyChasing: true,  // HTMLMediaElement の内部バッファによるライブストリームの待機時間を追跡する
+                            liveBufferLatencyMaxLatency: 3.0,  // HTMLMediaElement で許容するバッファの最大値 (秒単位)
+                            liveBufferLatencyMinRemain: 0.5,  // HTMLMediaElement に保持されるバッファの待機時間の最小値 (秒単位)
                         }
                     },
                     // aribb24.js
                     aribb24: {
-                        normalFont: '"Windows TV MaruGothic","Hiragino Maru Gothic Pro","Yu Gothic Medium",sans-serif',
-                        gaijiFont: '"Windows TV MaruGothic","Hiragino Maru Gothic Pro","Yu Gothic Medium",sans-serif',
+                        normalFont: '"Windows TV MaruGothic", "Hiragino Maru Gothic Pro", "Yu Gothic Medium", sans-serif',
+                        gaijiFont: '"Windows TV MaruGothic", "Hiragino Maru Gothic Pro", "Yu Gothic Medium", sans-serif',
                         forceStrokeColor: 'black',  // 縁取りする色
                         drcsReplacement: true,  // DRCS 文字を対応する Unicode 文字に置換
                         enableRawCanvas: true,  // 高解像度の字幕 Canvas を取得できるように
                         useStrokeText: true,  // 縁取りに strokeText API を利用
                     }
                 },
+                // 字幕
                 subtitle: {
-                    type: 'aribb24',
+                    type: 'aribb24',  // aribb24.js を有効化
                 }
             });
 
-            // デバッグ用にプレイヤーインスタンスも window 名前空間に入れる
+            // デバッグ用にプレイヤーインスタンスも window 直下に入れる
             (window as any).player = this.player;
 
             // 再生/停止されたとき
@@ -638,7 +672,7 @@ export default Mixin.extend({
                 // 念のためさらに少しだけ待ってから
                 window.setTimeout(() => {
                     this.is_loading = false;
-                    this.is_background_visible = false;
+                    this.is_background_display = false;
                 }, 100);
                 this.player.video.oncanplay = null;
                 this.player.video.oncanplaythrough = null;
@@ -653,11 +687,11 @@ export default Mixin.extend({
             this.eventsource.addEventListener('initial_update', (event_raw: MessageEvent) => {
 
                 // イベントを取得
-                const event = JSON.parse(event_raw.data.replace(/'/g, '"'));
+                const event = JSON.parse(event_raw.data);
 
                 // ステータスが Standby であれば、プレイヤーの背景を表示する
                 if (event.status === 'Standby') {
-                    this.is_background_visible = true;
+                    this.is_background_display = true;
                 }
             });
 
@@ -665,7 +699,7 @@ export default Mixin.extend({
             this.eventsource.addEventListener('status_update', (event_raw: MessageEvent) => {
 
                 // イベントを取得
-                const event = JSON.parse(event_raw.data.replace(/'/g, '"'));
+                const event = JSON.parse(event_raw.data);
                 console.log(`Status: ${event.status} Detail:${event.detail}`);
 
                 // 視聴者数を更新
@@ -683,7 +717,7 @@ export default Mixin.extend({
                         }
 
                         // プレイヤーの背景を表示する
-                        this.is_background_visible = true;
+                        this.is_background_display = true;
 
                         break;
                     }
@@ -694,6 +728,13 @@ export default Mixin.extend({
                         // ステータス詳細をプレイヤーから削除
                         if (!this.player.template.notice.textContent.includes('画質を')) {  // 画質切り替えの表示を上書きしない
                             this.player.notice(this.player.template.notice.textContent, 0.000001);
+                        }
+
+                        // 前のプレイヤーインスタンスの Picture-in-Picture ウインドウが残っている場合、終了させてからもう一度切り替える
+                        // チャンネル切り替えが完了しても前の Picture-in-Picture ウインドウは再利用されないため、一旦終了させるしかない
+                        if (document.pictureInPictureElement) {
+                            document.exitPictureInPicture();
+                            this.player.video.requestPictureInPicture();
                         }
 
                         break;
@@ -715,7 +756,7 @@ export default Mixin.extend({
                         this.player.play();
 
                         // プレイヤーの背景を表示する
-                        this.is_background_visible = true;
+                        this.is_background_display = true;
 
                         break;
                     }
@@ -738,7 +779,7 @@ export default Mixin.extend({
                         this.eventsource.close();
 
                         // プレイヤーの背景を表示する
-                        this.is_background_visible = true;
+                        this.is_background_display = true;
 
                         break;
                     }
@@ -749,7 +790,7 @@ export default Mixin.extend({
             this.eventsource.addEventListener('detail_update', (event_raw: MessageEvent) => {
 
                 // イベントを取得
-                const event = JSON.parse(event_raw.data.replace(/'/g, '"'));
+                const event = JSON.parse(event_raw.data);
                 console.log(`Status: ${event.status} Detail:${event.detail}`);
 
                 // 視聴者数を更新
@@ -760,8 +801,8 @@ export default Mixin.extend({
                     this.player.notice(event.detail, -1);
 
                     // プレイヤーの背景を表示する
-                    if (!this.is_background_visible) {
-                        this.is_background_visible = true;
+                    if (!this.is_background_display) {
+                        this.is_background_display = true;
                     }
                 }
             });
@@ -770,11 +811,184 @@ export default Mixin.extend({
             this.eventsource.addEventListener('clients_update', (event_raw: MessageEvent) => {
 
                 // イベントを取得
-                const event = JSON.parse(event_raw.data.replace(/'/g, '"'));
+                const event = JSON.parse(event_raw.data);
 
                 // 視聴者数を更新
                 this.channel.viewers = event.clients_count;
             });
+        },
+
+        // ショートカットキーを初期化する
+        initShortcutKeyHandler() {
+
+            // ショートカットキーハンドラー
+            this.shortcut_key_handler = (event: KeyboardEvent) => {
+
+                // キーリピート（押しっぱなし）状態の場合は実行しない
+                // 押し続けると何度も同じ動作が実行されて大変な事になる…
+                if (event.repeat) return;
+
+                // キーリピート状態は event.repeat を見る事でだいたい検知できるが、最初の何回かは検知できないこともある
+                // そこで、0.1 秒以内に連続して発火したキーイベント自体を無視するようにする
+                const now = Date.now();
+                if (now - this.shortcut_key_pressed_at < (0.1 * 1000)) return;
+                this.shortcut_key_pressed_at = now;  // 最終押下時刻を更新
+
+                // input・textarea・contenteditable 状態の要素でなければ
+                // 文字入力中にショートカットキーが作動してしまわないように
+                const tag = document.activeElement.tagName.toUpperCase();
+                const editable = document.activeElement.getAttribute('contenteditable');
+                if (tag !== 'INPUT' && tag !== 'TEXTAREA' && editable !== '' && editable !== 'true') {
+
+                    // ***** 数字キーでチャンネルを切り替える *****
+
+                    // チャンネルタイプを選択
+                    // Shift キーが押されていたらチャンネルタイプを地デジならBSに、BSなら地デジにする
+                    let switch_channel_type = this.channel.channel_type;
+                    if (event.shiftKey && this.channel.channel_type == 'GR') switch_channel_type = 'BS';
+                    if (event.shiftKey && this.channel.channel_type == 'BS') switch_channel_type = 'GR';
+
+                    // 1～9キー
+                    let switch_remocon_id = null;
+                    if (event.code === 'Digit1' || event.code === 'Digit2' || event.code === 'Digit3' ||
+                        event.code === 'Digit4' || event.code === 'Digit5' || event.code === 'Digit6' ||
+                        event.code === 'Digit7' || event.code === 'Digit8' || event.code === 'Digit9') {
+                        switch_remocon_id = Number(event.code.replace('Digit', ''));
+                    }
+                    // 0キー: 10に割り当て
+                    if (event.code === 'Digit0') switch_remocon_id = 10;
+                    // -キー: 11に割り当て
+                    if (event.code === 'Minus') switch_remocon_id = 11;
+                    // ^キー: 12に割り当て
+                    if (event.code === 'Equal') switch_remocon_id = 12;
+                    // 1～9キー (テンキー)
+                    if (event.code === 'Numpad1' || event.code === 'Numpad2' || event.code === 'Numpad3' ||
+                        event.code === 'Numpad4' || event.code === 'Numpad5' || event.code === 'Numpad6' ||
+                        event.code === 'Numpad7' || event.code === 'Numpad8' || event.code === 'Numpad9') {
+                        switch_remocon_id = Number(event.code.replace('Numpad', ''));
+                    }
+                    // 0キー (テンキー): 10に割り当て
+                    if (event.code === 'Numpad0') switch_remocon_id = 10;
+
+                    // この時点でリモコン番号が取得できていたら実行
+                    if (switch_remocon_id !== null) {
+
+                        // 切り替え先のチャンネルを取得する
+                        const switch_channel = this.getChannelFromRemoconID(switch_remocon_id, switch_channel_type);
+
+                        // チャンネルが取得できていれば、ルーティングをそのチャンネルに置き換える
+                        // 押されたキーに対応するリモコン番号のチャンネルがない場合や、現在と同じチャンネル ID の場合は何も起こらない
+                        if (switch_channel !== null && switch_channel.channel_id !== this.channel_id) {
+                            (async () => await this.$router.replace({path: `/tv/watch/${switch_channel.channel_id}`}))();
+                            return;
+                        }
+                    }
+
+                    // ***** 上下キーでチャンネルを切り替える *****
+
+                    // ↑キー: 前のチャンネルに切り替え
+                    if (event.code === 'ArrowUp') {
+                        (async () => await this.$router.replace({path: `/tv/watch/${this.channel_previous.channel_id}`}))();
+                        return;
+                    }
+                    // ↓キー: 次のチャンネルに切り替え
+                    if (event.code === 'ArrowDown') {
+                        (async () => await this.$router.replace({path: `/tv/watch/${this.channel_next.channel_id}`}))();
+                        return;
+                    }
+
+                    // ***** パネルのタブを切り替える *****
+
+                    // Kキー: 番組情報タブ
+                    if (event.code === 'KeyK') {
+                        this.panel_active_tab = 'Program';
+                        return;
+                    }
+                    // Lキー: チャンネルタブ
+                    if (event.code === 'KeyL') {
+                        this.panel_active_tab = 'Channel';
+                        return;
+                    }
+                    // ;(+)キー: コメントタブ
+                    if (event.code === 'Semicolon') {
+                        this.panel_active_tab = 'Comment';
+                        return;
+                    }
+                    // :(*)キー: Twitterタブ
+                    if (event.code === 'Quote') {
+                        this.panel_active_tab = 'Twitter';
+                        return;
+                    }
+                    // Pキー: パネルの表示切り替え
+                    if (event.code === 'KeyP') {
+                        this.is_panel_display = !this.is_panel_display;
+                        return;
+                    }
+
+                    // ***** プレイヤーのショートカットキー *****
+
+                    // プレイヤーが初期化されていない際や Ctrl or Cmd キーが一緒に押された際に作動しないように
+                    if (this.player !== null && !event.ctrlKey && !event.metaKey) {
+                        // Wキー: ライブ再生の同期
+                        if (event.code === 'KeyW') {
+                            this.player.sync();
+                            return;
+                        }
+                        // Eキー: Picture-in-Picture の表示切り替え
+                        if (event.code === 'KeyE') {
+                            if (document.pictureInPictureEnabled) {
+                                this.player.template.pipButton.click();
+                            }
+                            return;
+                        }
+                        // Sキー: 字幕の表示切り替え
+                        if (event.code === 'KeyS') {
+                            this.player.subtitle.toggle();
+                            if (!this.player.subtitle.container.classList.contains('dplayer-subtitle-hide')) {
+                                this.player.notice(`${this.player.tran('Show subtitle')}`);
+                            } else {
+                                this.player.notice(`${this.player.tran('Hide subtitle')}`);
+                            }
+                            return;
+                        }
+                        // Dキー: コメントの表示切り替え
+                        if (event.code === 'KeyD') {
+                            this.player.template.showDanmaku.click();
+                            if (this.player.template.showDanmakuToggle.checked) {
+                                this.player.notice(`${this.player.tran('Show comment')}`);
+                            } else {
+                                this.player.notice(`${this.player.tran('Hide comment')}`);
+                            }
+                            return;
+                        }
+                        // Fキー: フルスクリーンの切り替え
+                        if (event.code === 'KeyF') {
+                            this.player.fullScreen.toggle('browser');
+                            return;
+                        }
+                        // ←キー: 停止して0.25秒巻き戻す
+                        if (event.code === 'ArrowLeft') {
+                            this.player.video.pause();
+                            this.player.seek(this.player.video.currentTime - 0.25);
+                            return;
+                        }
+                        // →キー: 停止して0.25秒早送り
+                        if (event.code === 'ArrowRight') {
+                            this.player.video.pause();
+                            this.player.seek(this.player.video.currentTime + 0.25);
+                            return;
+                        }
+                        // Spaceキー: 再生/停止
+                        if (event.code === 'Space') {
+                            this.player.toggle();
+                            return;
+                        }
+                    }
+                }
+            };
+
+            // ページ上でキーが押されたときのイベントを登録
+            document.addEventListener('keydown', this.shortcut_key_handler);
         },
 
         // 破棄する
@@ -795,14 +1009,27 @@ export default Mixin.extend({
             // 再びローディング状態にする
             this.is_loading = true;
 
-            // プレイヤーを停止する
-            window.setTimeout(() => this.player.video.pause(), 400);
-            this.player.KonomiTVCanDestroy = true;  // 破棄可能のフラグをつける
+            // プレイヤーの背景を隠す
+            this.is_background_display = false;
 
-            // is_destroy_player が true の時は、ここで DPlayer 自体を破棄する
-            // false の時は次の initPlayer() が実行されるまで破棄されない
-            if (is_destroy_player === true && this.player !== null) {
-                window.setTimeout(() => {  // アニメーション分待ってから
+            // プレイヤーに破棄が可能なフラグをつける
+            this.player.KonomiTVCanDestroy = true;
+
+            // イベントソースを閉じる
+            if (this.eventsource !== null) {
+                this.eventsource.close();
+                this.eventsource = null;
+            }
+
+            // アニメーション分待ってから実行
+            this.interval_ids.push(window.setTimeout(() => {
+
+                // プレイヤーを停止する
+                this.player.video.pause();
+
+                // is_destroy_player が true の時は、ここで DPlayer 自体を破棄する
+                // false の時は次の initPlayer() が実行されるまで破棄されない
+                if (is_destroy_player === true && this.player !== null) {
                     try {
                         this.player.destroy();
                     } catch (error) {
@@ -810,14 +1037,9 @@ export default Mixin.extend({
                         this.player.plugins.mpegts.destroy();
                     }
                     this.player = null;
-                }, 400);
-            }
+                }
 
-            // イベントソースを閉じる
-            if (this.eventsource !== null) {
-                this.eventsource.close();
-                this.eventsource = null;
-            }
+            }, 400));  // 0.4 秒
         }
     }
 });
@@ -836,12 +1058,32 @@ export default Mixin.extend({
             transition: opacity 0.4s cubic-bezier(0.4, 0.38, 0.49, 0.94);
             opacity: 1;
         }
+        .dplayer-danmaku {
+            top: 50%;
+            left: 50%;
+            right: auto;
+            bottom: auto;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            max-width: 100%;
+            max-height: calc(100% - var(--comment-area-vertical-margin, 0px));
+            aspect-ratio: var(--comment-area-aspect-ratio, 16 / 9);
+            transition: max-height 0.5s cubic-bezier(0.42, 0.19, 0.53, 0.87), aspect-ratio 0.5s cubic-bezier(0.42, 0.19, 0.53, 0.87);
+            will-change: aspect-ratio;
+            overflow: hidden;
+        }
+        .dplayer-danloading {
+            display: none !important;
+        }
     }
     .dplayer-controller-mask {
         height: 82px !important;
         background: linear-gradient(to bottom, transparent, var(--v-background-base)) !important;
         opacity: 0 !important;
         visibility: hidden;
+        @media screen and (max-height: 450px) {
+            height: 66px !important;
+        }
     }
     .dplayer-controller {
         padding-left: calc(68px + 18px) !important;
@@ -928,6 +1170,15 @@ _::-webkit-full-page-media, _:future, :root .dplayer-icon:hover .dplayer-icon-co
         .dplayer-controller-mask, .dplayer-controller {
             opacity: 1 !important;
             visibility: visible !important;
+            .dplayer-comment-box {
+                left: calc(68px + 20px);
+                @include tablet {
+                    left: calc(68px + 16px);
+                }
+                @media screen and (max-height: 450px) {
+                    left: calc(56px + 16px);
+                }
+            }
         }
         .dplayer-notice {
             left: calc(68px + 30px);
@@ -949,10 +1200,26 @@ _::-webkit-full-page-media, _:future, :root .dplayer-icon:hover .dplayer-icon-co
                 left: calc(56px + 16px);
             }
         }
+        .dplayer-comment-setting-box {
+            left: calc(68px + 20px);
+            @include tablet {
+                left: calc(68px + 16px);
+            }
+            @media screen and (max-height: 450px) {
+                left: calc(56px + 16px);
+            }
+        }
         .dplayer-mobile .dplayer-mobile-icon-wrap {
             opacity: 0.7 !important;
             visibility: visible !important;
         }
+    }
+}
+// コントロール非表示時
+.watch-container:not(.watch-container--control-visible) {
+    .watch-player__dplayer .dplayer-danmaku {
+        max-height: 100% !important;
+        aspect-ratio: 16 / 9 !important;
     }
 }
 
@@ -1032,7 +1299,7 @@ _::-webkit-full-page-media, _:future, :root .dplayer-icon:hover .dplayer-icon-co
             text-decoration: none;
             user-select: none;
             @media screen and (max-height: 450px) {
-                height: 44px;
+                height: 32px;
                 border-radius: 10px;
             }
         }
@@ -1115,6 +1382,7 @@ _::-webkit-full-page-media, _:future, :root .dplayer-icon:hover .dplayer-icon-co
                 padding-right: 16px;
             }
             @media screen and (max-height: 450px) {
+                height: 66px;
                 padding-left: calc(56px + 16px);
             }
 
@@ -1129,7 +1397,9 @@ _::-webkit-full-page-media, _:future, :root .dplayer-icon:hover .dplayer-icon-co
                 user-select: none;
 
                 @include tablet {
-                    display: none;
+                    width: 48px;
+                    height: 28px;
+                    border-radius: 4px;
                 }
             }
 
@@ -1144,10 +1414,10 @@ _::-webkit-full-page-media, _:future, :root .dplayer-icon:hover .dplayer-icon-co
                 text-overflow: ellipsis;
 
                 @include tablet {
-                    margin-left: 0;
+                    margin-left: 12px;
                 }
-                @include smartphone {
-                    font-size: 14px;
+                @media screen and (max-height: 450px) {
+                    font-size: 16px;
                 }
             }
 
@@ -1159,8 +1429,8 @@ _::-webkit-full-page-media, _:future, :root .dplayer-icon:hover .dplayer-icon-co
                 @include tablet {
                     margin-left: 8px;
                 }
-                @include smartphone {
-                    font-size: 12px;
+                @media screen and (max-height: 450px) {
+                    font-size: 14px;
                 }
             }
 
@@ -1323,7 +1593,7 @@ _::-webkit-full-page-media, _:future, :root .dplayer-icon:hover .dplayer-icon-co
             padding-left: 16px;
             padding-right: 16px;
             @media screen and (max-height: 450px) {
-                height: 42px;
+                display: none;
             }
 
             .panel-close-button {

@@ -73,7 +73,7 @@ class LiveEncodingTask():
 
         # 映像
         options.append(f'-vcodec libx264 -flags +cgop -vb {QUALITY[quality]["video_bitrate"]} -maxrate {QUALITY[quality]["video_bitrate_max"]}')
-        options.append('-aspect 16:9 -r 30000/1001 -g 15 -preset veryfast -profile:v main')
+        options.append('-aspect 16:9 -r 30000/1001 -g 60 -preset veryfast -profile:v main')
         if is_dualmono is False:  # デュアルモノ以外
             ## 1440x1080 と 1920x1080 が混在しているので、1080p だけリサイズする解像度を特殊な設定に
             if quality == '1080p':
@@ -152,7 +152,7 @@ class LiveEncodingTask():
 
         # 映像
         options.append(f'--vbr {QUALITY[quality]["video_bitrate"]} --max-bitrate {QUALITY[quality]["video_bitrate_max"]}')
-        options.append(f'--dar 16:9 --gop-len 15 --profile main --interlace tff')
+        options.append(f'--dar 16:9 --gop-len 60 --profile main --interlace tff')
         ## インターレース解除
         if encoder_type == 'QSVEncC' or encoder_type == 'NVEncC':
             options.append('--vpp-deinterlace normal')
@@ -234,10 +234,13 @@ class LiveEncodingTask():
                 '-n', '-1',
                 # 主音声ストリームが常に存在する状態にする
                 ## ストリームが存在しない場合、無音の AAC ストリームが出力される
-                '-a', '1',
+                ## 音声がモノラルであればステレオにする
+                ## デュアルモノを2つのモノラル音声に分離し、右チャンネルを副音声として扱う
+                '-a', '13',
                 # 副音声ストリームが常に存在する状態にする
                 ## ストリームが存在しない場合、無音の AAC ストリームが出力される
-                '-b', '1',
+                ## 音声がモノラルであればステレオにする
+                '-b', '5',
                 # 字幕ストリームが常に存在する状態にする
                 ## ストリームが存在しない場合、PMT の項目が補われて出力される
                 '-c', '1',
@@ -403,10 +406,10 @@ class LiveEncodingTask():
 
             # オプションを取得
             # 現在放送中の番組がデュアルモノの場合、デュアルモノ用のエンコードオプションを取得
-            if program_present.primary_audio_type == '1/0+1/0モード(デュアルモノ)':
-                encoder_options = self.buildFFmpegOptions(real_quality, is_dualmono=True)
-            else:
-                encoder_options = self.buildFFmpegOptions(real_quality, is_dualmono=False)
+            #if program_present.primary_audio_type == '1/0+1/0モード(デュアルモノ)':
+            #    encoder_options = self.buildFFmpegOptions(real_quality, is_dualmono=True)
+            #else:
+            encoder_options = self.buildFFmpegOptions(real_quality, is_dualmono=False)
             Logging.info(f'LiveStream:{livestream.livestream_id} FFmpeg Commands:\nffmpeg {" ".join(encoder_options)}')
 
             # プロセスを非同期で作成・実行
@@ -423,10 +426,10 @@ class LiveEncodingTask():
 
             # オプションを取得
             # 現在放送中の番組がデュアルモノの場合、デュアルモノ用のエンコードオプションを取得
-            if program_present.primary_audio_type == '1/0+1/0モード(デュアルモノ)':
-                encoder_options = self.buildHWEncCOptions(encoder_type, real_quality, is_dualmono=True)
-            else:
-                encoder_options = self.buildHWEncCOptions(encoder_type, real_quality, is_dualmono=False)
+            #if program_present.primary_audio_type == '1/0+1/0モード(デュアルモノ)':
+            #    encoder_options = self.buildHWEncCOptions(encoder_type, real_quality, is_dualmono=True)
+            #else:
+            encoder_options = self.buildHWEncCOptions(encoder_type, real_quality, is_dualmono=False)
             Logging.info(f'LiveStream:{livestream.livestream_id} {encoder_type} Commands:\n{encoder_type} {" ".join(encoder_options)}')
 
             # プロセスを非同期で作成・実行
@@ -550,21 +553,21 @@ class LiveEncodingTask():
                 # 次の番組が None でない
                 if program_following is not None:
 
-                    # 現在:デュアルモノ以外 → 次:デュアルモノ
-                    if (program_present.primary_audio_type != '1/0+1/0モード(デュアルモノ)') and \
-                       (program_following.primary_audio_type == '1/0+1/0モード(デュアルモノ)'):
-                        # エンコーダーの音声出力をデュアルモノ対応にするため、エンコーダーを再起動する
-                        is_restart_required = True
-                        livestream.setStatus('Restart', '音声をデュアルモノに切り替えています…')
-                        break
+                    # # 現在:デュアルモノ以外 → 次:デュアルモノ
+                    # if (program_present.primary_audio_type != '1/0+1/0モード(デュアルモノ)') and \
+                    #    (program_following.primary_audio_type == '1/0+1/0モード(デュアルモノ)'):
+                    #     # エンコーダーの音声出力をデュアルモノ対応にするため、エンコーダーを再起動する
+                    #     is_restart_required = True
+                    #     livestream.setStatus('Restart', '音声をデュアルモノに切り替えています…')
+                    #     break
 
-                    # 現在:デュアルモノ → 次:デュアルモノ以外
-                    if (program_present.primary_audio_type == '1/0+1/0モード(デュアルモノ)') and \
-                       (program_following.primary_audio_type != '1/0+1/0モード(デュアルモノ)'):
-                        # エンコーダーの音声出力をステレオ対応にするため、エンコーダーを再起動する
-                        is_restart_required = True
-                        livestream.setStatus('Restart', '音声をステレオに切り替えています…')
-                        break
+                    # # 現在:デュアルモノ → 次:デュアルモノ以外
+                    # if (program_present.primary_audio_type == '1/0+1/0モード(デュアルモノ)') and \
+                    #    (program_following.primary_audio_type != '1/0+1/0モード(デュアルモノ)'):
+                    #     # エンコーダーの音声出力をステレオ対応にするため、エンコーダーを再起動する
+                    #     is_restart_required = True
+                    #     livestream.setStatus('Restart', '音声をステレオに切り替えています…')
+                    #     break
 
                     Logging.info(f'LiveStream:{livestream.livestream_id} Title:{program_following.title}')
 

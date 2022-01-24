@@ -14,7 +14,7 @@ html {
 
 body .v-application {  // アプリケーションのルート
     min-height: 100vh;
-    font-family: "Open Sans", "Noto Sans JP", sans-serif;
+    font-family: 'YakuHanJPs', 'Open Sans', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
     font-weight: 500;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -43,6 +43,7 @@ body header + main {
 
 body .route-container {  // ルートコンテナ
     height: 100%;
+    background: var(--v-background-base);
 }
 
 // ツールチップのスタイル
@@ -108,6 +109,20 @@ body .route-container {  // ルートコンテナ
     background: var(--v-background-lighten2);
     &:hover {
         background: var(--v-gray-base);
+    }
+}
+
+.v-menu__content {
+    overflow: hidden;
+    &::-webkit-scrollbar {
+        width: 12px;
+        height: 12px;
+    }
+    &::-webkit-scrollbar-track {
+        background: #1E1E1E;
+    }
+    &::-webkit-scrollbar-thumb {
+        border: solid 3.5px #1E1E1E;
     }
 }
 

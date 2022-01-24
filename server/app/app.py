@@ -199,10 +199,18 @@ async def Startup():
         for quality in QUALITY:
             LiveStream(channel['channel_id'], quality)
 
-# 15分に1回、番組情報を定期的に更新する
+# 1時間に1回、チャンネル情報を定期的に更新する
+# チャンネル情報は頻繁に変わるわけではないけど、手動で再起動しなくても自動で変更が適用されてほしい
+@app.on_event('startup')
+@repeat_every(seconds=60 * 60, wait_first=True, logger=Logging.logger)
+async def UpdateProgram():
+    await Channels.update()
+    await Channels.updateJikkyoStatus()
+
+# 30分に1回、番組情報を定期的に更新する
 # 番組情報の更新処理は重く他の処理に影響してしまうため、同期関数にして外部スレッドで実行する
 @app.on_event('startup')
-@repeat_every(seconds=15 * 60, wait_first=True, logger=Logging.logger)
+@repeat_every(seconds=30 * 60, wait_first=True, logger=Logging.logger)
 def UpdateProgram():
     RunAwait(Programs.update())
 

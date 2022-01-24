@@ -1,6 +1,5 @@
 <script lang="ts">
 
-import Vue from 'vue';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ja';
 
@@ -78,6 +77,43 @@ export default mixins(mixin).extend({
             } else {
                 return result;
             }
+        },
+
+        // チャンネルの実況勢いから「多」「激多」「祭」を取得する
+        // ref: https://ja.wikipedia.org/wiki/%E3%83%8B%E3%82%B3%E3%83%8B%E3%82%B3%E5%AE%9F%E6%B3%81
+        getChannelForceType(channel_force: number | null): string {
+
+            // 実況勢いが null（=対応する実況チャンネルがない）
+            if (channel_force === null) return 'normal';
+
+            // 実況勢いが 1000 コメント以上（祭）
+            if (channel_force >= 1000) return 'festival';
+            // 実況勢いが 200 コメント以上（激多）
+            if (channel_force >= 200) return 'so-many';
+            // 実況勢いが 100 コメント以上（多）
+            if (channel_force >= 100) return 'many';
+
+            // それ以外
+            return 'normal';
+        },
+
+        // リモコン番号とチャンネルタイプからチャンネルを取得する
+        getChannelFromRemoconID(remocon_id: number, channel_type: string): IChannel | null {
+
+            // 指定されたチャンネルタイプのチャンネルを取得
+            channel_type = channel_type.replace('GR', '地デジ');  //「GR」は「地デジ」に置換しておく
+            const channels = this.channels_list.get(channel_type);
+
+            // リモコン番号が一致するチャンネルを見つけ、一番最初に見つかったものを返す
+            for (let index = 0; index < channels.length; index++) {
+                const channel = channels[index];
+                if (channel.remocon_id === remocon_id) {
+                    return channel;
+                }
+            }
+
+            // リモコン番号が一致するチャンネルを見つけられなかった
+            return null;
         },
 
         // 前・現在・次のチャンネル情報を取得する
