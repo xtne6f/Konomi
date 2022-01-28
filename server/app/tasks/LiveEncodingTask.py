@@ -186,7 +186,7 @@ class LiveEncodingTask():
         return result
 
 
-    def run(self, channel_id:str, quality:str) -> None:
+    async def run(self, channel_id:str, quality:str) -> None:
         """
         エンコードタスクを実行する
 
@@ -347,7 +347,7 @@ class LiveEncodingTask():
             # チューナーを起動する
             # アンロック状態のチューナーインスタンスがあれば、自動的にそのチューナーが再利用される
             livestream.setStatus('Standby', 'チューナーを起動しています…')
-            is_tuner_opened = RunAwait(tuner.open())
+            is_tuner_opened = await tuner.open()
 
             # チューナーの起動に失敗した
             # ほとんどがチューナー不足によるものなので、ステータス詳細でもそのように表示する
@@ -363,7 +363,7 @@ class LiveEncodingTask():
             # チューナーに接続する
             # 放送波が送信される TCP ソケットまたは名前付きパイプを取得する
             livestream.setStatus('Standby', 'チューナーに接続しています…')
-            pipe_or_socket:Optional[Union[BinaryIO, socket.socket]] = RunAwait(tuner.connect())
+            pipe_or_socket:Optional[Union[BinaryIO, socket.socket]] = await tuner.connect()
 
             # チューナーへの接続に失敗した
             if pipe_or_socket is None:
@@ -717,7 +717,7 @@ class LiveEncodingTask():
             self.retry_count += 1  # カウントを増やす
             if self.max_retry_count > self.retry_count:
                 time.sleep(0.1)  # 少し待つ
-                self.run(channel_id, quality)  # 新しいタスクを立ち上げる
+                await self.run(channel_id, quality)  # 新しいタスクを立ち上げる
 
             # 最大再起動回数を使い果たしたので、Offline にする
             else:
@@ -730,7 +730,7 @@ class LiveEncodingTask():
 
                 # チューナーを終了する（ EDCB バックエンドのみ）
                 if CONFIG['general']['backend'] == 'EDCB':
-                    RunAwait(tuner.close())
+                    await tuner.close()
 
         # 通常終了
         else:
@@ -744,4 +744,4 @@ class LiveEncodingTask():
 
                 # チューナーを終了する（まだ制御を他のチューナーインスタンスに委譲していない場合）
                 # Idling に移行しアンロック状態になっている間にチューナーが再利用された場合、制御権限をもう持っていないため実際には何も起こらない
-                RunAwait(tuner.close())
+                await tuner.close()

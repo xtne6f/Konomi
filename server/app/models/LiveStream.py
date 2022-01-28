@@ -3,6 +3,7 @@
 # ref: https://stackoverflow.com/a/33533514/17124142
 from __future__ import annotations
 
+import asyncio
 import queue
 import threading
 import time
@@ -248,7 +249,7 @@ class LiveStream():
                 # どちらかをモジュールの初回参照時にインポートされないようにする必要がある
                 from app.tasks import LiveEncodingTask
                 instance = LiveEncodingTask()
-                instance.run(self.channel_id, self.quality)
+                asyncio.run(instance.run(self.channel_id, self.quality))
             thread = threading.Thread(target=run, name='LiveEncodingTask')
             thread.start()
 
