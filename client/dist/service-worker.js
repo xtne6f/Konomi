@@ -14,7 +14,7 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/4.3.1/workbox-sw.js");
 
 importScripts(
-  "/precache-manifest.416d1ade8fddf620e77205b62cedc7fc.js"
+  "/precache-manifest.205f890cb0d51c7cd06a5996cf0916bb.js"
 );
 
 workbox.core.setCacheNameDetails({prefix: "KonomiTV"});
