@@ -86,6 +86,7 @@ def main():
     # ***** サードパーティーライブラリが配置されているかのバリデーション *****
 
     # すべてのサードパーティーライブラリの配置をチェック
+    akebi_exists = False
     for library_name, library_path in LIBRARY_PATH.items():
 
         # x64 の場合、ARM のみの rkmppenc はチェックしない
@@ -95,7 +96,9 @@ def main():
         if current_arch == 'aarch64' and library_name in ['QSVEncC', 'NVEncC', 'VCEEncC']:
             continue
 
-        if Path(library_path).is_file() is False:
+        if library_name == 'Akebi':
+            akebi_exists = Path(library_path).is_file()
+        elif Path(library_path).is_file() is False:
             logger.error(f'{library_name} がサードパーティーライブラリとして配置されていないため、KonomiTV を起動できません。')
             logger.error(f'{library_name} が {library_path} に配置されているかを確認してください。')
             sys.exit(1)
@@ -131,7 +134,7 @@ def main():
         logger.error(f'ポート {port} は他のプロセスで使われているため、KonomiTV を起動できません。')
         logger.error(f'重複して KonomiTV を起動していないか、他のソフトでポート {port} を使っていないかを確認してください。')
         sys.exit(1)
-    if (port + 10) in used_ports:
+    if akebi_exists and (port + 10) in used_ports:
         logger.error(f'ポート {port + 10} は他のプロセスで使われているため、KonomiTV を起動できません。')
         logger.error(f'重複して KonomiTV を起動していないか、他のソフトでポート {port + 10} を使っていないかを確認してください。')
         sys.exit(1)
@@ -231,26 +234,29 @@ def main():
 
     # ***** KonomiTV サーバーを起動 *****
 
-    # Akebi HTTPS Server (HTTPS リバースプロキシ) を起動
-    ## HTTP/2 対応と HTTPS 化を一手に行う Golang 製の特殊なリバースプロキシサーバー
-    ## ログは server/logs/Akebi-HTTPS-Server.log に出力する
-    ## ref: https://github.com/tsukumijima/Akebi
-    with open(AKEBI_LOG_PATH, 'w', encoding='utf-8') as file:
-        reverse_proxy_process = subprocess.Popen(
-            [
-                LIBRARY_PATH['Akebi'],
-                '--listen-address', f'0.0.0.0:{port}',
-                '--proxy-pass-url', f'http://127.0.0.77:{port + 10}/',
-                '--keyless-server-url', 'https://akebi.konomi.tv/',
-                *custom_https_certificate,  # カスタム HTTPS 証明書/秘密鍵を指定する引数を追加（指定されているときのみ）
-            ],
-            stdout = file,
-            stderr = file,
-            creationflags = (subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0),  # コンソールなしで実行 (Windows)
-        )
+    if akebi_exists:
+        # Akebi HTTPS Server (HTTPS リバースプロキシ) を起動
+        ## HTTP/2 対応と HTTPS 化を一手に行う Golang 製の特殊なリバースプロキシサーバー
+        ## ログは server/logs/Akebi-HTTPS-Server.log に出力する
+        ## ref: https://github.com/tsukumijima/Akebi
+        with open(AKEBI_LOG_PATH, 'w', encoding='utf-8') as file:
+            reverse_proxy_process = subprocess.Popen(
+                [
+                    LIBRARY_PATH['Akebi'],
+                    '--listen-address', f'0.0.0.0:{port}',
+                    '--proxy-pass-url', f'http://127.0.0.77:{port + 10}/',
+                    '--keyless-server-url', 'https://akebi.konomi.tv/',
+                    *custom_https_certificate,  # カスタム HTTPS 証明書/秘密鍵を指定する引数を追加（指定されているときのみ）
+                ],
+                stdout = file,
+                stderr = file,
+                creationflags = (subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0),  # コンソールなしで実行 (Windows)
+            )
 
-    # このプロセスが終了されたときに、HTTPS リバースプロキシも一緒に終了する
-    atexit.register(lambda: reverse_proxy_process.terminate())
+        # このプロセスが終了されたときに、HTTPS リバースプロキシも一緒に終了する
+        atexit.register(lambda: reverse_proxy_process.terminate())
+    else:
+        logger.info('Akebi リバースプロキシが存在しないため指定されたポートを直接リッスンします。')
 
     # Uvicorn を自動リロードモードで起動するかのフラグ
     ## 基本的に開発時用で、コードを変更するとアプリケーションサーバーを自動で再起動してくれる
@@ -266,10 +272,12 @@ def main():
         # リッスンするアドレス
         ## サーバーへのすべてのアクセスには一度 Akebi のリバースプロキシを通す
         ## 混乱を避けるため、容易にアクセスされないだろう 127.0.0.77 のみでリッスンしている
-        host = '127.0.0.77',
+        ## (リバースプロキシなしのときはワイルドカード)
+        host = '127.0.0.77' if akebi_exists else '0.0.0.0',
         # リッスンするポート番号
         ## 指定されたポートに 10 を足したもの
-        port = port + 10,
+        ## (リバースプロキシなしのときはそのまま)
+        port = port + (10 if akebi_exists else 0),
         # 自動リロードモードモードで起動するか
         reload = is_reload,
         # リロードするフォルダ
