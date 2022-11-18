@@ -1,4 +1,21 @@
 
+### ※このフォークについての注意
+
+- このフォークの master ブランチはデバッグの便利のために個人的な変更を行うものです。**このブランチだけで生じた不具合などを原作者に報告するのは控えてください。**
+  - [Akebi](https://github.com/tsukumijima/Akebi) で述べられているように、最近のブラウザは「安全なコンテキスト」以外での制限が増える傾向にあります。
+    このブランチの導入方法では HTTPS 通信を必ずしも求めないため、原作者の想定しない動作をする可能性は十分にあります。
+    - 例えば「キャプチャをクリップボードにコピーする」は「安全なコンテキスト」が必要です。
+- このブランチは Windows においてインストーラーによる導入を想定していません。
+  - 個人的に Windows を「管理者ユーザー」として使っているため、ユーザー権限のサービスプロセスは UAC 保護のない管理者権限そのものとなり、インストーラーによる導入がためらわれるためです。
+  - 設定ファイル "config.yaml" は "config.example.yaml" を元に各自で作成してください。
+    - 最低限 `capture.upload_folder` キーの編集は必要になると思います。
+  - サードパーティーライブラリの準備および起動を自動化する簡単な PowerShell スクリプトを "server/prepare-and-start.ps1" に用意しています。
+    - [7-Zip](https://www.7-zip.org/) が必要です。
+    - 今のところ Akebi リバースプロキシのダウンロードを省略しているので、必要な場合は個別に導入してください。
+- 字幕のフォントが既定で「Windows TV 丸ゴシック」になっていますが、最近の Windows には搭載されていないと思うので変更をお勧めします。
+
+このフォークについての注意終わり。
+
 # <img width="350" src="https://user-images.githubusercontent.com/39271166/134050201-8110f076-a939-4b62-8c86-7beaa3d4728c.png" alt="KonomiTV">
 
 <img width="100%" src="https://user-images.githubusercontent.com/39271166/153729504-2c047f35-c788-49d2-a088-cc1c3bab3fd0.png"><br>
@@ -31,8 +48,6 @@
 それでも私が頑張れば私を含めたユーザーの視聴体験が向上するわけで、必要な犠牲かなと思っています。
 
 ## 動作環境
-
-<img width="100%" src="https://user-images.githubusercontent.com/39271166/153731898-c9743df8-794b-4498-ac25-017662f38759.png"><br>
 
 ### サーバー
 
@@ -97,8 +112,6 @@
   - 他人が見るために書いたものではないのであれですが、一応自分用の [開発資料](https://mango-garlic-eff.notion.site/KonomiTV-90f4b25555c14b9ba0cf5498e6feb1c3) と [DB設計](https://mango-garlic-eff.notion.site/KonomiTV-544e02334c89420fa24804ec70f46b6d) 的なメモを公開しておきます。もし PR される場合などの参考になれば。
 
 ## 事前準備
-
-<img width="100%" src="https://user-images.githubusercontent.com/39271166/153729029-bbcd6c16-9661-4f61-b7a9-64df8c1e4586.png"><br>
 
 ### チューナーのドライバーを px4_drv に変更する
 
@@ -251,8 +264,6 @@ KonomiTV を共有したい家族や親戚に Tailscale アカウントを作成
 20台までは無料ですし (逸般の誤家庭でなければ十分すぎる)、この機会に導入しておくことをおすすめします。
 
 ## サーバーのインストール
-
-<img width="100%" src="https://user-images.githubusercontent.com/39271166/201460497-7f0b951a-5495-40cd-95af-32cc2146d991.png"><br>
 
 ### KonomiTV (β) 0.5.2 以前からのアップグレード
 
