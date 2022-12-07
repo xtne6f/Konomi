@@ -9,6 +9,7 @@ import psutil
 import requests
 import subprocess
 import sys
+import time
 import uvicorn
 import uvicorn.logging
 from pathlib import Path
@@ -20,6 +21,7 @@ from app.constants import (
     AKEBI_LOG_PATH,
     API_REQUEST_HEADERS,
     BASE_DIR,
+    STATIC_DIR,
     CONFIG,
     KONOMITV_ACCESS_LOG_PATH,
     KONOMITV_SERVER_LOG_PATH,
@@ -38,7 +40,12 @@ def main():
     )
     parser.add_argument('--reload', action='store_true', help='start uvicorn in auto-reload mode')
     parser.add_argument('--version', action='version', help='show version information', version=f'KonomiTV version {VERSION}')
+    parser.add_argument('--delaysec', type=int, default=0, help='delay seconds to start')
+    parser.add_argument('--notifyicon', action='store_true', help='show taskbar notifyicon')
     args = parser.parse_args()
+
+    if args.delaysec > 0:
+        time.sleep(args.delaysec)
 
     # Uvicorn を自動リロードモードで起動するかのフラグ
     ## 基本的に開発時用で、コードを変更するとアプリケーションサーバーを自動で再起動してくれる
@@ -275,6 +282,25 @@ def main():
     # Uvicorn のサーバーインスタンスを初期化
     server = uvicorn.Server(config)
 
+    # 通知領域にアイコンを作成
+    notifyicon = None
+    if args.notifyicon and os.name == 'nt':
+        from app.utils.NotifyIcon import NotifyIcon
+
+        index_uri = f'https://127-0-0-1.local.konomi.tv:{port}/' if akebi_exists else f'http://127.0.0.1:{port}/'
+        notifyicon = NotifyIcon(
+            str(STATIC_DIR / 'KonomiTV-Notify.ico'),
+            'KonomiTV - ' + index_uri,
+            lambda: NotifyIcon.shellExecuteOpen(index_uri),
+            {
+                'サーバーログ': lambda: NotifyIcon.shellExecuteOpen(str(KONOMITV_SERVER_LOG_PATH)),
+                'アクセスログ': lambda: NotifyIcon.shellExecuteOpen(str(KONOMITV_ACCESS_LOG_PATH)),
+                'Akebi のログ': lambda: NotifyIcon.shellExecuteOpen(str(AKEBI_LOG_PATH)),
+                '---': None,
+                '終了': lambda: NotifyIcon.generateConsoleCtrlCEvent()
+            }
+        )
+
     # Uvicorn を起動
     ## 自動リロードモードと通常時で呼び方が異なる
     ## ここで終了までブロッキングされる（非同期 I/O のエントリーポイント）
@@ -286,6 +312,10 @@ def main():
     else:
         # 通常時
         server.run()
+
+    # 通知領域のアイコンを破棄
+    if notifyicon:
+        notifyicon.close()
 
 
 if __name__ == '__main__':
