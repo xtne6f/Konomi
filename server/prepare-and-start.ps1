@@ -166,4 +166,4 @@ $Env:PIPENV_VENV_IN_PROJECT = "true"
 
 .\thirdparty\Python\python.exe -m pipenv sync --python=$(Convert-Path .\thirdparty\Python\python.exe)
 .\thirdparty\Python\python.exe -m pipenv run aerich upgrade
-.\thirdparty\Python\python.exe -m pipenv run python -X utf8 KonomiTV.py
+.\thirdparty\Python\python.exe -m pipenv run python -X utf8 KonomiTV.py --notifyicon
