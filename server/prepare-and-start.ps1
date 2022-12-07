@@ -165,4 +165,4 @@ pushd -LiteralPath $PSScriptRoot
 .\thirdparty\Python\python.exe -m poetry env use $(Convert-Path .\thirdparty\Python\python.exe)
 .\thirdparty\Python\python.exe -m poetry install --only main --no-root
 .\thirdparty\Python\python.exe -m poetry run aerich upgrade
-.\thirdparty\Python\python.exe -m poetry run python -X utf8 KonomiTV.py
+.\thirdparty\Python\python.exe -m poetry run python -X utf8 KonomiTV.py --notifyicon
