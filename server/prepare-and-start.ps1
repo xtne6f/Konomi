@@ -168,4 +168,4 @@ pushd -LiteralPath $PSScriptRoot
 '*** If stops here, comment out the `python.exe -m poetry run aerich upgrade` command in the script. ***'
 .\thirdparty\Python\python.exe -m poetry run aerich upgrade
 
-.\thirdparty\Python\python.exe -m poetry run python -X utf8 KonomiTV.py
+.\thirdparty\Python\python.exe -m poetry run python -X utf8 KonomiTV.py --notifyicon
