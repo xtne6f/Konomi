@@ -33,6 +33,17 @@
         "web-bml": "github:tsukumijima/web-bml#dc77635cd61222d0d01d92d8ca6401b047421977"
     },
     "devDependencies": {
+        "@iconify/icons-akar-icons": "1.2.11",
+        "@iconify/icons-bi": "1.2.11",
+        "@iconify/icons-charm": "1.2.6",
+        "@iconify/icons-fa-brands": "1.2.3",
+        "@iconify/icons-fa-solid": "1.2.3",
+        "@iconify/icons-fa6-solid": "1.2.7",
+        "@iconify/icons-fa": "1.2.2",
+        "@iconify/icons-fluent": "1.2.21",
+        "@iconify/icons-heroicons-solid": "1.2.5",
+        "@iconify/icons-ic": "1.2.10",
+        "@iconify/icons-material-symbols": "1.2.21",
         "@iconify/vue2": "^2.1.0",
         "@mdi/font": "6.9.96",
         "@types/offscreencanvas": "^2019.7.1",
