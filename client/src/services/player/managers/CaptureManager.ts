@@ -7,7 +7,6 @@ import DPlayer from 'dplayer';
 import 'dayjs/locale/ja';
 import * as piexif from 'piexifjs';
 
-import APIClient from '@/services/APIClient';
 import Captures from '@/services/Captures';
 import useChannelsStore from '@/store/ChannelsStore';
 import useSettingsStore from '@/store/SettingsStore';
@@ -98,27 +97,37 @@ class CaptureManager {
 
         // もし Web フォントがダウンロードされていないならダウンロード
         // コメントのレンダリングに最低限必要なウェイトのみダウンロードする
-        // 待つ必要はないので非同期で実行
-        // ref: https://stackoverflow.com/a/66969479/17124142
-        (async () => {
-            const web_font_noto_sans_url = 'https://cdn.jsdelivr.net/npm/noto-sans-japanese@1.0.0/fonts/NotoSansJP-Bold.woff2';
-            const web_font_open_sans_url = 'https://cdn.jsdelivr.net/npm/open-sans-all@0.1.3/fonts/open-sans-700.woff2';
-            const base64_font_prefix = 'data:font/woff2;base64,';
-            if (web_font_noto_sans_base64 === null) {
-                const web_font_noto_sans: ArrayBuffer = (await APIClient.get(web_font_noto_sans_url, {
-                    responseType: 'arraybuffer',
-                })).data;
-                // Buffer で受け取ったデータを Base64 に変換
-                web_font_noto_sans_base64 = base64_font_prefix + Buffer.from(web_font_noto_sans).toString('base64');
-            }
-            if (web_font_open_sans_base64 === null) {
-                const web_font_open_sans: ArrayBuffer = (await APIClient.get(web_font_open_sans_url, {
-                    responseType: 'arraybuffer',
-                })).data;
-                // Buffer で受け取ったデータを Base64 に変換
-                web_font_open_sans_base64 = base64_font_prefix + Buffer.from(web_font_open_sans).toString('base64');
-            }
-        })();
+        const web_font_noto_sans_url = '/assets/fonts/noto-sans-jp-v36-japanese-700.woff2';
+        const web_font_open_sans_url = '/assets/fonts/open-sans-v27-latin-700.woff2';
+        const base64_font_prefix = 'data:font/woff2;base64,';
+        if (web_font_noto_sans_base64 === null) {
+            fetch(web_font_noto_sans_url)
+                .then(response => {
+                    if (!response.ok) throw new Error();
+                    return response.arrayBuffer();
+                })
+                .then(web_font_noto_sans => {
+                    // Buffer で受け取ったデータを Base64 に変換
+                    web_font_noto_sans_base64 = base64_font_prefix + Buffer.from(web_font_noto_sans).toString('base64');
+                })
+                .catch(error => {
+                    // 何もしない
+                });
+        }
+        if (web_font_open_sans_base64 === null) {
+            fetch(web_font_open_sans_url)
+                .then(response => {
+                    if (!response.ok) throw new Error();
+                    return response.arrayBuffer();
+                })
+                .then(web_font_open_sans => {
+                    // Buffer で受け取ったデータを Base64 に変換
+                    web_font_open_sans_base64 = base64_font_prefix + Buffer.from(web_font_open_sans).toString('base64');
+                })
+                .catch(error => {
+                    // 何もしない
+                });
+        }
     }
 
 

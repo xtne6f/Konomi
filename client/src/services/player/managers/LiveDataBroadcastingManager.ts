@@ -24,10 +24,10 @@ class LiveDataBroadcastingManager implements PlayerManager {
 
     // BML 用フォント
     private static readonly round_gothic: BMLBrowserFontFace = {
-        source: 'url("https://cdn.jsdelivr.net/gh/googlefonts/kosugi-maru@main/fonts/webfonts/KosugiMaru-Regular.woff2"), local("sans-serif")',
+        source: 'url("/assets/fonts/KosugiMaru-Regular.woff2"), local("sans-serif")',
     };
     private static readonly square_gothic: BMLBrowserFontFace = {
-        source: 'url("https://cdn.jsdelivr.net/gh/googlefonts/kosugi@main/fonts/webfonts/Kosugi-Regular.woff2"), local("sans-serif")',
+        source: 'url("/assets/fonts/Kosugi-Regular.woff2"), local("sans-serif")',
     };
 
     private player: DPlayer;
