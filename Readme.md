@@ -1,4 +1,28 @@
 
+### ※このフォークについての注意
+
+- このフォークの master ブランチはデバッグの便利のために個人的な変更を行うものです。**このブランチだけで生じた不具合などを原作者に報告するのは控えてください。**
+  - [Akebi](https://github.com/tsukumijima/Akebi) で述べられているように、最近のブラウザは「安全なコンテキスト」以外での制限が増える傾向にあります。
+    このブランチの導入方法では HTTPS 通信を必ずしも求めないため、原作者の想定しない動作をする可能性は十分にあります。
+    - 例えば「キャプチャをクリップボードにコピーする」は「安全なコンテキスト」が必要です。
+- このブランチはインストーラーによる導入を想定していません。
+  - 個人的に Windows を「管理者ユーザー」として使っているため、ユーザー権限のサービスプロセスは UAC 保護のない管理者権限そのものとなり、インストーラーによる導入がためらわれるためです。
+  - 設定ファイル "config.yaml" は "config.example.yaml" を元に各自で作成してください。
+    - 最低限 `video.recorded_folders` と `capture.upload_folder` キーの編集は必要になると思います。
+  - サードパーティーライブラリの準備および起動を自動化する簡単な PowerShell またはシェルスクリプトを "server/prepare-and-start.{ps1|sh}" に用意しています。
+    - Windows (prepare-and-start.ps1) では [7-Zip](https://www.7-zip.org/) が必要です。
+    - Linux (prepare-and-start.sh) では ffmpeg や {QSV|NV|VCE}EncC については環境にあるコマンドのシンボリックリンクを作るだけです。コマンド自体は個別に導入してください。
+    - Linux では `./prepare-and-start.sh install` のように install 引数を指定することで PM2 によるデーモン化ができます。
+      - delete 引数で解除します。
+      - root プロセスのデーモン化ではないため、起動時に PM2 自体をスタートアップするための `pm2 startup` も必要になると思います。
+    - 今のところ Akebi リバースプロキシのダウンロードを省略しているので、必要な場合は個別に導入してください。
+      - Akebi リバースプロキシを使わない場合、今のところ Twitter やニコニコ実況のログインを要する機能 (コメント投稿など) は使えません。
+  - Windows では通知領域にアイコンを表示できます。
+    - コンソール画面を非表示にしたいときは "server/KonomiTV-NoConsole.pyw" を "server/thirdparty/Python/pythonw.exe" で開いてください。
+- 字幕のフォントが既定で「Windows TV 丸ゴシック」になっていますが、最近の Windows には搭載されていないと思うので変更をお勧めします。
+
+このフォークについての注意終わり。
+
 # <img width="350" src="https://user-images.githubusercontent.com/39271166/134050201-8110f076-a939-4b62-8c86-7beaa3d4728c.png" alt="KonomiTV">　<!-- omit in toc -->
 
 <img width="100%" src="https://user-images.githubusercontent.com/39271166/153729504-2c047f35-c788-49d2-a088-cc1c3bab3fd0.png"><br>
@@ -77,8 +101,6 @@
 当然ながら表に泥臭い処理を見せないようにしている分、裏側の実装がそれなりに大変です。細かいところまで調整しているとかなりの手間がかかります。  
 それでも私が頑張れば私を含めたユーザーの視聴体験が向上するわけで、必要な犠牲かなと思っています。
 
-<img width="100%" src="https://user-images.githubusercontent.com/39271166/153731898-c9743df8-794b-4498-ac25-017662f38759.png"><br>
-
 ## 動作環境
 
 ### サーバー
@@ -142,8 +164,6 @@
     - Vuetify は補助的に利用しているだけで、大部分は独自で書いた SCSS スタイルを適用しています。
   - コメントを多めに書いたりそれなりにきれいにコーディングしているつもりなので、少なくとも TVRemotePlus なんかよりかは読みやすいコードになっている…はず。
   - 他人が見るために書いたものではないのであれですが、一応自分用の [開発資料](https://mango-garlic-eff.notion.site/KonomiTV-90f4b25555c14b9ba0cf5498e6feb1c3) と [DB設計](https://mango-garlic-eff.notion.site/KonomiTV-544e02334c89420fa24804ec70f46b6d) 的なメモを公開しておきます。もし PR される場合などの参考になれば。
-
-<img width="100%" src="https://user-images.githubusercontent.com/39271166/153729029-bbcd6c16-9661-4f61-b7a9-64df8c1e4586.png"><br>
 
 ## 事前準備
 
@@ -340,8 +360,6 @@ KonomiTV を共有したい家族や親戚に Tailscale アカウントを作成
 
 **KonomiTV での利用以外にも、EDCB Material WebUI や EPGStation などの、プライベートネットワーク上の Web サーバーに家の外からアクセスするときにとても便利なサービスです。**  
 20台までは無料ですし (逸般の誤家庭でなければ十分すぎる)、この機会に導入しておくことをおすすめします。
-
-<img width="100%" src="https://user-images.githubusercontent.com/39271166/201460497-7f0b951a-5495-40cd-95af-32cc2146d991.png"><br>
 
 ## サーバーのインストール/アップデート
 
