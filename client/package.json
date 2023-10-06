@@ -34,6 +34,7 @@
     },
     "devDependencies": {
         "@iconify/vue2": "^2.1.0",
+        "@mdi/font": "6.9.96",
         "@types/offscreencanvas": "^2019.7.1",
         "@types/resize-observer-browser": "^0.1.8",
         "@types/wicg-mediasession": "^1.1.5",
@@ -61,7 +62,8 @@
         "vue-template-compiler": "^2.7.14",
         "vuetify-loader": "^1.9.2",
         "vuetify-message-snackbar": "^0.2.7",
-        "vuetify2-component-types": "^2.7.0"
+        "vuetify2-component-types": "^2.7.0",
+        "yakuhanjp": "3.4.1"
     },
     "browserslist": [
         "> 1%",
