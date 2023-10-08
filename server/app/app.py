@@ -1,6 +1,7 @@
 
 import asyncio
 import atexit
+import mimetypes
 import tortoise.contrib.fastapi
 from fastapi import FastAPI
 from fastapi import Request
@@ -81,6 +82,21 @@ app.include_router(SettingsRouter.router)
 app.include_router(MaintenanceRouter.router)
 app.include_router(VersionRouter.router)
 
+# 拡張子と MIME タイプの対照表を上書きする
+# StaticFiles の内部動作は mimetypes.guess_type() の挙動に応じて変化する
+for suffix, type in [
+    ('.css', 'text/css'),
+    ('.html', 'text/html'),
+    ('.ico', 'image/x-icon'),
+    ('.js', 'application/javascript'),
+    ('.json', 'application/json'),
+    ('.map', 'application/json'),
+    ]:
+    guess = mimetypes.guess_type(f'foo{suffix}')[0]
+    if guess != type:
+        Logging.info(f'Override {suffix} MIME type: {guess} -> {type}.')
+        mimetypes.add_type(type, suffix)
+
 # 静的ファイルの配信
 app.mount('/assets', StaticFiles(directory=CLIENT_DIR / 'assets', html=True))
 
@@ -102,18 +118,8 @@ async def Root(file: str):
     filepath = CLIENT_DIR / file
     if filepath.is_file():
         # 拡張子から MIME タイプを判定
-        if filepath.suffix == '.css':
-            mime = 'text/css'
-        elif filepath.suffix == '.html':
-            mime = 'text/html'
-        elif filepath.suffix == '.ico':
-            mime = 'image/x-icon'
-        elif filepath.suffix == '.js':
-            mime = 'application/javascript'
-        elif filepath.suffix == '.json':
-            mime = 'application/json'
-        elif filepath.suffix == '.map':
-            mime = 'application/json'
+        if filepath.suffix in ['.css', '.html', '.ico', '.js', '.json', '.map']:
+            mime = mimetypes.guess_type(f'foo{filepath.suffix}')[0] or 'text/plain'
         else:
             mime = 'text/plain'
         return FileResponse(filepath, media_type=mime)
