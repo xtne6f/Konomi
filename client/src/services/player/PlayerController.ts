@@ -1011,7 +1011,15 @@ class PlayerController {
                 // 非同期で 0.05 秒おきに直接 readyState === HAVE_ENOUGH_DATA かどうかを確認する
                 // この処理は先に canplaythrough が発火した場合は実行されない
                 (async () => {
+                    let have_future_data_count = 0;
                     while (this.player !== null && this.player.video.readyState < 4) {
+                        // プレイヤーが充分と判断する基準はまちまちでブラウザによっては HAVE_FUTURE_DATA のままタイムアウトするので
+                        // HAVE_FUTURE_DATA がおおむね 5 秒つづけば HAVE_ENOUGH_DATA 扱いする
+                        if (this.player.video.readyState < 3) {
+                            have_future_data_count = 0;
+                        } else if (++have_future_data_count > 100) {
+                            break;
+                        }
                         await Utils.sleep(0.05);
                     }
                     // さらに 0.1 秒待ってから実行
